@@ -130,15 +130,20 @@ number of clever ways that a sequencer could bypass this approach by making it _
 when it didn't need to.
 
 This can be done in three ways:
-1. The sequencer first signs a preconfirmation that includes an entirely made up L1Origin that represents a valid L1 state
+1. The sequencer first signs a preconfirmation that includes an invalid L1Origin that represents a valid L1 state
 at height N but one that never existed or received sufficient L1 validator attestations to be considered a valid
 candidate block at height N. (NOTE: look into the precise number of attestations required from L1 validators for an L1
 block to be considered valid pending finalization). When finalizing an L2 block at this preconfirmed height on the L1
 the sequencer (necessarily) changes the L1Origin to the canonical L1 block at height N. To the naive process described
 above this equivocation looks necessary since the L1Origin changed.
 2. The sequencer does the same as above, but instead uses an entirely invalid L1Origin (represents an invalid state,
-not just a non-canonical one for the given height).
-3. The sequencer first signs a preconfirmation that includes a valid L1Origin at height N but then
+not just a non-canonical one for the given height). The reason this is considered separately from the above is because
+proving equivocation is not strictly necessary in this case, one can instead prove the L2 block is simply invalid.
+3. The sequencer first signs a preconfirmation for L2 block M that includes a valid L1Origin at height N but then
+equivocates with a different L2 block M that includes a valid L1Oriign at height N+x.
+
+
+
 ### Pseudocode
 
 ## Security Considerations
