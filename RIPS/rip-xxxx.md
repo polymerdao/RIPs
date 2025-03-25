@@ -35,9 +35,9 @@ In the absence of a fast confirmation later L2s can provide three levels of fina
 * FINAL: The transaction data for this rollup block has been submitted to the data availability layer and the
 transaction containing the commitment to this DA batch has been finalized on the L1.
 * SAFE: The transaction data for this rollup block has been submitted to a data availability layer and a transaction
-* containing the commitment to this DA batch has been submitted on the L1 but has not been finalized.
+containing the commitment to this DA batch has been submitted on the L1 but has not been finalized.
 * UNSAFE: The transaction data for this rollup block has not been submitted to the data availability layer or it has
-* been submitted but the transaction committing the DA batch into the L1 has not been submitted to the L1.
+been submitted but the transaction committing the DA batch into the L1 has not been submitted to the L1.
 
 Once SAFE finality has been achieved the only mechanism by which the sequencer can reorg the committed segment of blocks
 is if an L1 reorgs such that the DA commitment transaction is removed.
