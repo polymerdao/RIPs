@@ -88,8 +88,10 @@ Notice that a preconfirmation may include other fields or include only a signed 
 and are ignored for the purposes of this RIP and a L2_BLOCK_HASH commits to the L2_STATE_ROOT and L2_BLOCK_HEIGHT but
 signing over these fields directly and excluding other fields makes the proving process more gas efficient on the L1.
 
-Proving equivocation between a signed ExecutionPayloadEnvelope and a settled L2Output is straightforward assuming a
-fault proof system (or validity proofs) are in place.
+### Proving sequencer equivocation when L2 reorgs are not allowed regardless of L1 reorgs
+Proving equivocation between a signed SignedPreconfirmation and a settled L2 state is straightforward assuming a
+fault proof system (or validity proofs) are in place if we do not allow for sequencer equivocation under any conditions.
+The steps are as follows:
 1. User submits the valid L2Output at the equivocated block height to the proof system
 2. Once it is verified by the proof system…
 3. User submits a signed ExecutionPayloadEnvelope that has the same block height but a different blockhash
@@ -97,19 +99,24 @@ fault proof system (or validity proofs) are in place.
    1. SignedPreconfirmation.L2BlockHash ≠ L2Output.BlockHash
    2. SignedPreconfirmation.L2BlockHeight == L2Output.BlockHeight
 
+### Proving sequencer equivocation when L2 reorgs are allowed due to L1 reorgs
 ![Necessary equivocation](../assets/rip-xxxx/necessary_equivocation.png)
-For L2s that support RIP-7859 it is valid and necessary to equivocate in the case where an L1 reorg changes the nascent
-L2 block's L1Origin, as shown above.
-   
-In order to only punish equivocation which was unnecessary we need to not punish equivocation if it is because the
-L1Origin reorged and necessitated a reorg of the nascent L2 block.
+If a L2 accepts L1 inputs to its block building process that are unfinalized it may be necessary for the L2 reorg in the
+event of an L1 reorg that impacts these inputs. In this context it is not sufficient to prove equivocation using the
+simple process described above as a sequencer should not be punishable in the event the equivocation was necessary.
+
+If these L2s support an L1 view, such as RIP-7859, it remains possible to prove only unnecessary equivocation in
+this context.
+
+In order to only punish equivocation which was unnecessary we need handle the below scenarios:
+
+
+#### The sequencer equivocates without changing the L1Origin between the equivocated L2 blocks.
 
 ![Unnecessary equivocation](../assets/rip-xxxx/unnecessary_equivocation_same_origin.png)
-If a nascent L2 block is reorged despite the L1Origin not changing between the equivocating blocks, as shown above,
-this is a readily attributable fault.
-
-To accomplish this we need to add a step to our contract so that we check that the L1Origin is the same.
-The process becomes:
+If a nascent L2 block is reorged despite the L1Origin not changing between the equivocating blocks,
+as shown above, this is considered a fault. This fault is readily attributable by adding a check for equivalency of
+the L1Origin in the equivocated blocks. The proving process becomes:
 1. User submits the valid L2Output at the equivocated block height to the proof system
 2. Once it is verified by the proof system…
 3. User submits a signed ExecutionPayloadEnvelope that has the same block height but a different blockhash
@@ -118,33 +125,19 @@ The process becomes:
    2. SignedPreconfirmation.L2BlockHeight == L2Output.BlockHeight
    3. SignedPreconfirmation.L2StateRoot.L1Origin == L2Output.L1Origin
       1. Proving the state of the L1Origin will require providing a Merkle proof opening the L2StateRoot up to the standardized
-      location in the L2 state that stores the L1Origin info
+         location in the L2 state that stores the L1Origin info
 
-IFF the above are all true then the sequencer reorged a L2 block when it did not need to. We can then have arbitrary
-downstream mechanisms to slash/punish them or reward/recoup losses to the affected parties.
-Slashing/punishing is easier as the above establishes- inside the L1 execution environment- an objective attribution of
-fault linked to the sequencer, but it is more difficult to recompense affected parties as we have not established an objective link to them yet.
+#### The sequencer equivocates by originally signing an L2 block with an invalid L1Origin and replaces it with an L2 block with
+the valid L1Origin.
+![Unnecessary equivocation](../assets/rip-xxxx/unnecessary_equivocation_invalid_origin.png)
+TODO: steps
 
-The above process describes a simple mechanism to prove unnecessary equivocation in the simplest case, but there a
-number of clever ways that a sequencer could bypass this approach by making it _appear_ as though the L1Origin changed
-when it didn't need to.
+#### The sequencer equivocates by signing an L2 block with a valid L1Origin at L1 height M but then also
+signs an L2 block at the same height with a valid L1Origin at L1 height M+x
+![Unnecessary equivocation](../assets/rip-xxxx/unnecessary_equivocation_different_origin_heights.png)
+TODO: steps
 
-This can be done in three ways:
-1. The sequencer first signs a preconfirmation that includes an invalid L1Origin that represents a valid L1 state
-at height N but one that never existed or received sufficient L1 validator attestations to be considered a valid
-candidate block at height N. (NOTE: look into the precise number of attestations required from L1 validators for an L1
-block to be considered valid pending finalization). When finalizing an L2 block at this preconfirmed height on the L1
-the sequencer (necessarily) changes the L1Origin to the canonical L1 block at height N. To the naive process described
-above this equivocation looks necessary since the L1Origin changed.
-2. The sequencer does the same as above, but instead uses an entirely invalid L1Origin (represents an invalid state,
-not just a non-canonical one for the given height). The reason this is considered separately from the above is because
-proving equivocation is not strictly necessary in this case, one can instead prove the L2 block is simply invalid.
-3. The sequencer first signs a preconfirmation for L2 block M that includes a valid L1Origin at height N but then
-equivocates with a different L2 block M that includes a valid L1Oriign at height N+x.
-
-
-
-### Pseudocode
+## Pseudocode
 
 ## Security Considerations
 
